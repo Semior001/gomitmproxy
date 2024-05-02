@@ -715,9 +715,11 @@ func (p *Proxy) canMITM(hostname string) (ok bool) {
 	}
 
 	// TODO(ameshkov): change this, should be exposed via a callback.
-	if port != "443" {
+	switch {
+	case port == "80":
+		log.Debug("attempting to MITM connections to port 80")
+	case port != "443":
 		log.Debug("do not attempt to MITM connections to a port different from 443")
-
 		return false
 	}
 
