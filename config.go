@@ -83,4 +83,9 @@ type Config struct {
 	// OnError is called if there's an issue with retrieving the response from
 	// the remote server.
 	OnError OnErrorFunc
+
+	// AllowMITM is called when the proxy is about to perform a MITM attack.
+	// By default, only the 443 port is allowed for MITM. If you want to allow
+	// MITM for other ports, you should provide this function.
+	AllowMITM func(host, port string) bool
 }
