@@ -727,5 +727,9 @@ func (p *Proxy) canMITM(hostname string) (ok bool) {
 		return false
 	}
 
+	if p.AllowMITM == nil {
+		return true
+	}
+
 	return p.AllowMITM(hostname, port)
 }
