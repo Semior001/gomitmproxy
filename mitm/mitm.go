@@ -167,7 +167,13 @@ func NewConfig(ca *x509.Certificate, privateKey *rsa.PrivateKey, storage CertsSt
 		organization: "gomitmproxy",
 		certsStorage: storage,
 		roots:        roots,
-		tlsConfig:    &tls.Config{},
+		tlsConfig: &tls.Config{
+			NextProtos: []string{"http/1.1"},
+			// Accept client certs without verifying them
+			// Note that we will still verify remote server certs
+			// nolint:gosec
+			InsecureSkipVerify: true,
+		},
 	}, nil
 }
 
@@ -188,6 +194,7 @@ func (c *Config) SetValidity(validity time.Duration) {
 }
 
 // SetTLSConfig sets the TLS config template for the host.
+// GetCertificate function will be ignored and re-written on-the-fly.
 func (c *Config) SetTLSConfig(cfg *tls.Config) {
 	c.tlsConfig = cfg
 }
@@ -196,8 +203,8 @@ func (c *Config) SetTLSConfig(cfg *tls.Config) {
 // domain certificates on-the-fly using the SNI extension (if specified)
 // or the hostname
 func (c *Config) NewTLSConfigForHost(hostname string) *tls.Config {
-	c.tlsConfig.NextProtos = []string{"http/1.1"}
-	c.tlsConfig.GetCertificate = func(clientHello *tls.ClientHelloInfo) (*tls.Certificate, error) {
+	tlsCfg := c.tlsConfig.Clone()
+	tlsCfg.GetCertificate = func(clientHello *tls.ClientHelloInfo) (*tls.Certificate, error) {
 		host := clientHello.ServerName
 		if host == "" {
 			host = hostname
@@ -205,13 +212,7 @@ func (c *Config) NewTLSConfigForHost(hostname string) *tls.Config {
 
 		return c.GetOrCreateCert(host)
 	}
-
-	// Accept client certs without verifying them
-	// Note that we will still verify remote server certs
-	// nolint:gosec
-	c.tlsConfig.InsecureSkipVerify = true
-
-	return c.tlsConfig
+	return tlsCfg
 }
 
 // GetOrCreateCert gets or creates a certificate for the specified hostname
